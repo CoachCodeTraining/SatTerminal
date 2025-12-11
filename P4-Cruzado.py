@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Script para generar análisis cruzado de la pregunta P3 (Medios SAT Utilizados)
+Script para generar análisis cruzado de la pregunta P4 (Servicio Electrónico)
 con todas las variables demográficas y de clasificación.
 
 Autor: Generado automáticamente
@@ -16,34 +16,15 @@ from openpyxl.utils import get_column_letter
 import os
 import sys
 
-def normalizar_p3(valor):
+def normalizar_p4(valor):
     """
-    Normaliza los valores de P3 manteniendo todas las combinaciones.
-    Normaliza el orden para que combinaciones equivalentes se agrupen correctamente.
+    Normaliza los valores de P4. P4 no tiene combinaciones múltiples,
+    solo valores individuales.
     """
     if pd.isna(valor):
         return None
     valor_str = str(valor).strip()
-    
-    # Detectar qué opciones están presentes
-    tiene_presencial = 'a. Presencial' in valor_str
-    tiene_contact = 'b. Contact Center' in valor_str
-    tiene_electronicos = 'c. Servicios Electrónicos' in valor_str
-    
-    # Construir la combinación normalizada en orden estándar
-    opciones = []
-    if tiene_presencial:
-        opciones.append('a. Presencial')
-    if tiene_contact:
-        opciones.append('b. Contact Center')
-    if tiene_electronicos:
-        opciones.append('c. Servicios Electrónicos')
-    
-    if len(opciones) == 0:
-        return None
-    
-    # Retornar combinación normalizada (siempre en el mismo orden)
-    return ', '.join(opciones)
+    return valor_str if valor_str else None
 
 def crear_rango_edad(edad):
     """
@@ -147,13 +128,13 @@ def aplicar_estilos_bordes(ws, fila, col, es_primera_fila=False, es_ultima_fila=
     ws.cell(row=fila, column=col).border = border
     return border
 
-def generar_analisis_cruzado(archivo_entrada='V3.xlsx', archivo_salida='Analisis_Cruzado_P3.xlsx'):
+def generar_analisis_cruzado(archivo_entrada='V3.xlsx', archivo_salida='Analisis_Cruzado_P4.xlsx'):
     """
-    Función principal que genera el análisis cruzado de P3.
+    Función principal que genera el análisis cruzado de P4.
     
     Args:
         archivo_entrada: Nombre del archivo Excel de entrada (default: V3.xlsx)
-        archivo_salida: Nombre del archivo Excel de salida (default: Analisis_Cruzado_P3.xlsx)
+        archivo_salida: Nombre del archivo Excel de salida (default: Analisis_Cruzado_P4.xlsx)
     """
     print(f"Leyendo archivo: {archivo_entrada}")
     
@@ -170,9 +151,8 @@ def generar_analisis_cruzado(archivo_entrada='V3.xlsx', archivo_salida='Analisis
         print(f"ERROR al leer el archivo: {e}")
         sys.exit(1)
     
-    # Crear columna normalizada de P3
-    print("Normalizando valores de P3...")
-    df['P3_norm'] = df['P3 - Medios SAT Utilizados'].apply(normalizar_p3)
+    # P4 no requiere normalización (no tiene combinaciones múltiples)
+    print("Procesando valores de P4...")
     
     # Crear rangos de edad
     print("Creando rangos de edad...")
@@ -190,7 +170,7 @@ def generar_analisis_cruzado(archivo_entrada='V3.xlsx', archivo_salida='Analisis
     print("Creando estructura del archivo Excel...")
     wb = Workbook()
     ws = wb.active
-    ws.title = "P3"
+    ws.title = "P4"
     
     # Definir estilos
     thin_side = Side(style='thin', color='FFD0D0D0')
@@ -201,7 +181,7 @@ def generar_analisis_cruzado(archivo_entrada='V3.xlsx', archivo_salida='Analisis
     
     # Fila 0: Título de la pregunta (se ajustará después de calcular columnas)
     print("Agregando título de la pregunta...")
-    ws.cell(row=1, column=1, value='P3 - Medios SAT Utilizados')
+    ws.cell(row=1, column=1, value='P4 - Servicio Electrónico')
     ws.cell(row=1, column=1).font = Font(bold=True, size=14)
     ws.cell(row=1, column=1).alignment = Alignment(horizontal='left', vertical='center')  # Alineado a la izquierda
     ws.cell(row=1, column=1).fill = fill_fila1
@@ -293,20 +273,15 @@ def generar_analisis_cruzado(archivo_entrada='V3.xlsx', archivo_salida='Analisis
             'categorias': ['Garifuna', 'Ladino', 'Maya', 'Otro', 'Xinca'],
             'col_inicio': col + 84
         },
-        'P3 Medios SAT utilizados': {
-            'columna': 'P3_norm',
-            'categorias': ['a. Presencial', 'b. Contact Center', 'c. Servicios Electrónicos'],
-            'col_inicio': col + 89
-        },
         'Oficina/Agencia/Delegación': {
             'columna': 'Region_Oficina',
             'categorias': ['Central', 'Occidente', 'Sur', 'Nororiente'],
-            'col_inicio': col + 92
+            'col_inicio': col + 89
         },
         'Aduana': {
             'columna': 'Region_Aduana',
             'categorias': ['Central', 'Occidente', 'Sur', 'Nororiente'],
-            'col_inicio': col + 96
+            'col_inicio': col + 93
         }
     }
     
@@ -395,42 +370,41 @@ def generar_analisis_cruzado(archivo_entrada='V3.xlsx', archivo_salida='Analisis
             ws.cell(row=4, column=col_actual).alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
             col_actual += 1
     
-    # Filas de datos: Valores de P3
+    # Filas de datos: Valores de P4
     print("Generando datos del análisis cruzado...")
     # Solo mostrar las 3 opciones principales, pero incluir todas las combinaciones
-    p3_valores = ['a. Presencial', 'b. Contact Center', 'c. Servicios Electrónicos']
+    p4_valores = ['a. RTU', 'b. FEL', 'c. Aduanas sin papeles', 'd. Agencia Virtual', 'e. Otros']
     
-    print(f"  Opciones de P3 a mostrar: {len(p3_valores)}")
-    for opcion in p3_valores:
-        # Contar todos los registros que contengan esta opción (incluyendo combinaciones)
-        count = len(df[df['P3_norm'].str.contains(opcion, na=False)])
-        print(f"    - {opcion}: {count} registros (incluyendo combinaciones)")
+    print(f"  Opciones de P4 a mostrar: {len(p4_valores)}")
+    for opcion in p4_valores:
+        # Contar todos los registros con esta opción (P4 no tiene combinaciones)
+        count = len(df[df['P4 - Servicio Electrónico'] == opcion])
+        print(f"    - {opcion}: {count} registros")
     
     fila = 5
     
-    for idx_p3, p3_val in enumerate(p3_valores):
+    for idx_p4, p4_val in enumerate(p4_valores):
         col_actual = 1
         
         # Nombre de la fila
-        ws.cell(row=fila, column=col_actual, value=p3_val)
+        ws.cell(row=fila, column=col_actual, value=p4_val)
         border = Border(
             left=Side(style='thin', color='FFD0D0D0'),
             right=Side(style='thin', color='FFD0D0D0'),
-            top=Side(style='medium' if idx_p3 == 0 else 'thin', color='FFD0D0D0'),
+            top=Side(style='medium' if idx_p4 == 0 else 'thin', color='FFD0D0D0'),
             bottom=Side(style='thin', color='FFD0D0D0')
         )
         ws.cell(row=fila, column=col_actual).border = border
         ws.cell(row=fila, column=col_actual).alignment = Alignment(horizontal='left', vertical='center')
         col_actual += 1
         
-        # TOTAL - contar todos los registros que contengan esta opción
-        # Usar la columna original sin normalizar para que coincida con el ejemplo
-        total = len(df[df['P3 - Medios SAT Utilizados'].str.contains(p3_val, na=False)])
+        # TOTAL - contar todos los registros con esta opción (P4 no tiene combinaciones)
+        total = len(df[df['P4 - Servicio Electrónico'] == p4_val])
         ws.cell(row=fila, column=col_actual, value=total)
         border = Border(
             left=Side(style='medium'),
             right=Side(style='medium'),
-            top=Side(style='medium' if idx_p3 == 0 else 'thin', color='FFD0D0D0'),
+            top=Side(style='medium' if idx_p4 == 0 else 'thin', color='FFD0D0D0'),
             bottom=Side(style='thin', color='FFD0D0D0')
         )
         ws.cell(row=fila, column=col_actual).border = border
@@ -446,30 +420,20 @@ def generar_analisis_cruzado(archivo_entrada='V3.xlsx', archivo_salida='Analisis
                 es_primera = (i == 0)
                 es_ultima = (i == num_cats - 1)
                 
-                if var_nombre == 'P3 Medios SAT utilizados':
-                    # Para la columna de P3, verificar si p3_val contiene esta opción
-                    # p3_val es una opción individual como "a. Presencial"
-                    # cat es también una opción individual como "a. Presencial"
-                    if p3_val == cat:
-                        valor = total
-                    else:
-                        valor = 0
+                # Contar intersección (P4 no tiene combinaciones, comparación directa)
+                if col_original == 'Rango_Edad':
+                    count = len(df[(df['P4 - Servicio Electrónico'] == p4_val) & (df[col_original] == cat)])
+                elif col_original == 'Region_Oficina' or col_original == 'Region_Aduana':
+                    count = len(df[(df['P4 - Servicio Electrónico'] == p4_val) & (df[col_original] == cat)])
                 else:
-                    # Contar intersección - incluir todas las combinaciones que contengan p3_val
-                    if col_original == 'Rango_Edad':
-                        count = len(df[(df['P3_norm'].str.contains(p3_val, na=False)) & (df[col_original] == cat)])
-                    elif col_original == 'P39 - Idiomas':
-                        # P39 puede tener combinaciones múltiples, usar str.contains para desglosar
-                        count = len(df[(df['P3_norm'].str.contains(p3_val, na=False)) & (df[col_original].astype(str).str.contains(cat, na=False))])
-                    else:
-                        count = len(df[(df['P3_norm'].str.contains(p3_val, na=False)) & (df[col_original] == cat)])
-                    valor = count
+                    count = len(df[(df['P4 - Servicio Electrónico'] == p4_val) & (df[col_original] == cat)])
+                valor = count
                 
                 ws.cell(row=fila, column=col_actual, value=valor)
                 border = Border(
                     left=Side(style='medium' if es_primera else 'thin', color='FFD0D0D0'),
                     right=Side(style='medium' if es_ultima else 'thin', color='FFD0D0D0'),  # Última columna del grupo tiene right=medium
-                    top=Side(style='medium' if idx_p3 == 0 else 'thin', color='FFD0D0D0'),
+                    top=Side(style='medium' if idx_p4 == 0 else 'thin', color='FFD0D0D0'),
                     bottom=Side(style='thin', color='FFD0D0D0')
                 )
                 ws.cell(row=fila, column=col_actual).border = border
@@ -514,7 +478,7 @@ def generar_analisis_cruzado(archivo_entrada='V3.xlsx', archivo_salida='Analisis
     col_actual += 1
     
     # TOTAL general
-    total_general = len(df[df['P3_norm'].notna()])
+    total_general = len(df[df['P4 - Servicio Electrónico'].notna()])
     ws.cell(row=fila, column=col_actual, value=total_general)
     ws.cell(row=fila, column=col_actual).font = Font(bold=True)
     ws.cell(row=fila, column=col_actual).border = Border(
@@ -526,7 +490,9 @@ def generar_analisis_cruzado(archivo_entrada='V3.xlsx', archivo_salida='Analisis
     ws.cell(row=fila, column=col_actual).alignment = Alignment(horizontal='center', vertical='center')
     col_actual += 1
     
-    # Totales por categoría
+    # Totales por categoría (solo para registros con P4)
+    df_p4 = df[df['P4 - Servicio Electrónico'].notna()]  # Filtrar solo registros con P4
+    
     for var_nombre, var_info in variables.items():
         col_original = var_info['columna']
         num_cats = len(var_info['categorias'])
@@ -535,17 +501,12 @@ def generar_analisis_cruzado(archivo_entrada='V3.xlsx', archivo_salida='Analisis
             es_primera = (i == 0)
             es_ultima = (i == num_cats - 1)
             
-            if var_nombre == 'P3 Medios SAT utilizados':
-                # Contar todos los registros que contengan esta opción (incluyendo combinaciones)
-                total_cat = len(df[df[col_original].str.contains(cat, na=False)])
+            if col_original == 'Rango_Edad':
+                total_cat = len(df_p4[df_p4[col_original] == cat])
+            elif col_original == 'Region_Oficina' or col_original == 'Region_Aduana':
+                total_cat = len(df_p4[df_p4[col_original] == cat])
             else:
-                if col_original == 'Rango_Edad':
-                    total_cat = len(df[df[col_original] == cat])
-                elif col_original == 'P39 - Idiomas':
-                    # P39 puede tener combinaciones múltiples, usar str.contains para desglosar
-                    total_cat = len(df[df[col_original].astype(str).str.contains(cat, na=False)])
-                else:
-                    total_cat = len(df[df[col_original] == cat])
+                total_cat = len(df_p4[df_p4[col_original] == cat])
             
             ws.cell(row=fila, column=col_actual, value=total_cat)
             ws.cell(row=fila, column=col_actual).font = Font(bold=True)
@@ -593,6 +554,9 @@ def generar_analisis_cruzado(archivo_entrada='V3.xlsx', archivo_salida='Analisis
     # TABLA DE PORCENTAJES
     # ============================================================================
     print("Generando tabla de porcentajes...")
+    
+    # Filtrar solo registros con P4 para cálculos de totales
+    df_p4 = df[df['P4 - Servicio Electrónico'].notna()]
     
     # Fila de encabezados principales (igual que la primera tabla)
     fila_porcentajes = fila
@@ -669,15 +633,15 @@ def generar_analisis_cruzado(archivo_entrada='V3.xlsx', archivo_salida='Analisis
     
     # Filas de datos con porcentajes
     fila_porcentajes += 1
-    for idx_p3, p3_val in enumerate(p3_valores):
+    for idx_p4, p4_val in enumerate(p4_valores):
         col_actual = 1
         
         # Nombre de la fila
-        ws.cell(row=fila_porcentajes, column=col_actual, value=p3_val)
+        ws.cell(row=fila_porcentajes, column=col_actual, value=p4_val)
         border = Border(
             left=Side(style='thin', color='FFD0D0D0'),
             right=Side(style='thin', color='FFD0D0D0'),
-            top=Side(style='medium' if idx_p3 == 0 else 'thin', color='FFD0D0D0'),
+            top=Side(style='medium' if idx_p4 == 0 else 'thin', color='FFD0D0D0'),
             bottom=Side(style='thin', color='FFD0D0D0')
         )
         ws.cell(row=fila_porcentajes, column=col_actual).border = border
@@ -685,8 +649,8 @@ def generar_analisis_cruzado(archivo_entrada='V3.xlsx', archivo_salida='Analisis
         col_actual += 1
         
         # TOTAL - calcular porcentaje sobre el total general
-        total_absoluto = len(df[df['P3 - Medios SAT Utilizados'].str.contains(p3_val, na=False)])
-        total_general = len(df[df['P3_norm'].notna()])
+        total_absoluto = len(df[df['P4 - Servicio Electrónico'] == p4_val])
+        total_general = len(df[df['P4 - Servicio Electrónico'].notna()])
         porcentaje_total = (total_absoluto / total_general * 100) if total_general > 0 else 0
         porcentaje_redondeado = redondear_porcentaje(porcentaje_total)
         if porcentaje_redondeado == 0:
@@ -698,7 +662,7 @@ def generar_analisis_cruzado(archivo_entrada='V3.xlsx', archivo_salida='Analisis
         border = Border(
             left=Side(style='medium'),
             right=Side(style='medium'),
-            top=Side(style='medium' if idx_p3 == 0 else 'thin', color='FFD0D0D0'),
+            top=Side(style='medium' if idx_p4 == 0 else 'thin', color='FFD0D0D0'),
             bottom=Side(style='thin', color='FFD0D0D0')
         )
         ws.cell(row=fila_porcentajes, column=col_actual).border = border
@@ -714,36 +678,23 @@ def generar_analisis_cruzado(archivo_entrada='V3.xlsx', archivo_salida='Analisis
                 es_primera = (i == 0)
                 es_ultima = (i == num_cats - 1)
                 
-                if var_nombre == 'P3 Medios SAT utilizados':
-                    # Para la columna de P3, calcular porcentaje
-                    if p3_val == cat:
-                        valor_absoluto = total_absoluto
-                    else:
-                        valor_absoluto = 0
-                    porcentaje = (valor_absoluto / total_general * 100) if total_general > 0 else 0
+                # Contar intersección (P4 no tiene combinaciones)
+                if col_original == 'Rango_Edad':
+                    count = len(df[(df['P4 - Servicio Electrónico'] == p4_val) & (df[col_original] == cat)])
+                elif col_original == 'Region_Oficina' or col_original == 'Region_Aduana':
+                    count = len(df[(df['P4 - Servicio Electrónico'] == p4_val) & (df[col_original] == cat)])
                 else:
-                    # Contar intersección
-                    if col_original == 'Rango_Edad':
-                        count = len(df[(df['P3 - Medios SAT Utilizados'].str.contains(p3_val, na=False)) & (df[col_original] == cat)])
-                    elif col_original == 'Region_Oficina' or col_original == 'Region_Aduana':
-                        count = len(df[(df['P3 - Medios SAT Utilizados'].str.contains(p3_val, na=False)) & (df[col_original] == cat)])
-                    elif col_original == 'P39 - Idiomas':
-                        # P39 puede tener combinaciones múltiples, usar str.contains para desglosar
-                        count = len(df[(df['P3 - Medios SAT Utilizados'].str.contains(p3_val, na=False)) & (df[col_original].astype(str).str.contains(cat, na=False))])
-                    else:
-                        count = len(df[(df['P3 - Medios SAT Utilizados'].str.contains(p3_val, na=False)) & (df[col_original] == cat)])
-                    
-                    # Calcular porcentaje VERTICAL (sobre el total de esa categoría/columna)
-                    if col_original == 'Rango_Edad':
-                        total_categoria = len(df[df[col_original] == cat])
-                    elif col_original == 'Region_Oficina' or col_original == 'Region_Aduana':
-                        total_categoria = len(df[df[col_original] == cat])
-                    elif col_original == 'P39 - Idiomas':
-                        total_categoria = len(df[df[col_original].astype(str).str.contains(cat, na=False)])
-                    else:
-                        total_categoria = len(df[df[col_original] == cat])
-                    
-                    porcentaje = (count / total_categoria * 100) if total_categoria > 0 else 0
+                    count = len(df[(df['P4 - Servicio Electrónico'] == p4_val) & (df[col_original] == cat)])
+                
+                # Calcular porcentaje VERTICAL (sobre el total de esa categoría/columna - solo registros con P4)
+                if col_original == 'Rango_Edad':
+                    total_categoria = len(df_p4[df_p4[col_original] == cat])
+                elif col_original == 'Region_Oficina' or col_original == 'Region_Aduana':
+                    total_categoria = len(df_p4[df_p4[col_original] == cat])
+                else:
+                    total_categoria = len(df_p4[df_p4[col_original] == cat])
+                
+                porcentaje = (count / total_categoria * 100) if total_categoria > 0 else 0
                 
                 porcentaje_redondeado = redondear_porcentaje(porcentaje)
                 if porcentaje_redondeado == 0:
@@ -755,7 +706,7 @@ def generar_analisis_cruzado(archivo_entrada='V3.xlsx', archivo_salida='Analisis
                 border = Border(
                     left=Side(style='medium' if es_primera else 'thin', color='FFD0D0D0'),
                     right=Side(style='medium' if es_ultima else 'thin', color='FFD0D0D0'),
-                    top=Side(style='medium' if idx_p3 == 0 else 'thin', color='FFD0D0D0'),
+                    top=Side(style='medium' if idx_p4 == 0 else 'thin', color='FFD0D0D0'),
                     bottom=Side(style='thin', color='FFD0D0D0')
                 )
                 ws.cell(row=fila_porcentajes, column=col_actual).border = border
@@ -778,10 +729,10 @@ def generar_analisis_cruzado(archivo_entrada='V3.xlsx', archivo_salida='Analisis
     col_actual += 1
     
     # TOTAL general - suma vertical de porcentajes
-    # Sumar los porcentajes de las 3 filas anteriores (a. Presencial, b. Contact Center, c. Servicios Electrónicos)
+    # Sumar los porcentajes de las 5 filas anteriores (opciones de P4)
     suma_total = 0
-    for idx_p3 in range(len(p3_valores)):
-        fila_anterior = fila_porcentajes - len(p3_valores) + idx_p3
+    for idx_p4 in range(len(p4_valores)):
+        fila_anterior = fila_porcentajes - len(p4_valores) + idx_p4
         valor_celda = ws.cell(row=fila_anterior, column=col_actual).value
         if valor_celda is not None:
             if isinstance(valor_celda, (int, float)):
@@ -819,10 +770,10 @@ def generar_analisis_cruzado(archivo_entrada='V3.xlsx', archivo_salida='Analisis
             es_primera = (i == 0)
             es_ultima = (i == num_cats - 1)
             
-            # Sumar los porcentajes verticalmente de las 3 filas anteriores
+            # Sumar los porcentajes verticalmente de las 5 filas anteriores
             suma_porcentajes = 0
-            for idx_p3 in range(len(p3_valores)):
-                fila_anterior = fila_porcentajes - len(p3_valores) + idx_p3
+            for idx_p4 in range(len(p4_valores)):
+                fila_anterior = fila_porcentajes - len(p4_valores) + idx_p4
                 valor_celda = ws.cell(row=fila_anterior, column=col_actual).value
                 if valor_celda is not None:
                     if isinstance(valor_celda, (int, float)):
@@ -900,10 +851,10 @@ def generar_analisis_cruzado(archivo_entrada='V3.xlsx', archivo_salida='Analisis
 if __name__ == "__main__":
     # Permitir especificar archivos como argumentos
     archivo_entrada = sys.argv[1] if len(sys.argv) > 1 else 'V3.xlsx'
-    archivo_salida = sys.argv[2] if len(sys.argv) > 2 else 'P3-Cruzado.xlsx'
+    archivo_salida = sys.argv[2] if len(sys.argv) > 2 else 'P4-Cruzado.xlsx'
     
     print("=" * 60)
-    print("GENERADOR DE ANÁLISIS CRUZADO P3")
+    print("GENERADOR DE ANÁLISIS CRUZADO P4")
     print("=" * 60)
     print()
     
