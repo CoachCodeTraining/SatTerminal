@@ -587,8 +587,8 @@ def generar_hoja_pregunta(wb, df, pregunta_num, pregunta_col, pregunta_nombre, t
     ws.cell(row=fila, column=col_actual).alignment = Alignment(horizontal='center', vertical='center')
     col_actual += 1
     
-    # TOTAL general
-    total_general = len(df_pregunta)
+    # TOTAL general (usar el total de registros del dataset, no solo los que tienen respuesta)
+    total_general = len(df_work)
     ws.cell(row=fila, column=col_actual, value=total_general)
     ws.cell(row=fila, column=col_actual).font = Font(bold=True)
     ws.cell(row=fila, column=col_actual).border = Border(
@@ -1347,8 +1347,8 @@ def generar_analisis_en_hoja_unica(ws, df, pregunta_num, pregunta_col, pregunta_
     ws.cell(row=fila, column=col_actual).alignment = Alignment(horizontal='center', vertical='center')
     col_actual += 1
     
-    # TOTAL general
-    total_general = len(df_pregunta)
+    # TOTAL general (usar el total de registros del dataset, no solo los que tienen respuesta)
+    total_general = len(df_work)
     ws.cell(row=fila, column=col_actual, value=total_general)
     ws.cell(row=fila, column=col_actual).font = Font(bold=True)
     ws.cell(row=fila, column=col_actual).border = Border(
