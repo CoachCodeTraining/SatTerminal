@@ -103,6 +103,10 @@ def detectar_combinaciones_multiples(df, columna):
     if columna not in df.columns:
         return False
     
+    # EXCEPCIÓN: P43 tiene comas pero es una sola opción, no múltiple
+    if columna == 'P43 - Tipo de Punto':
+        return False
+    
     valores = df[columna].dropna()
     if len(valores) == 0:
         return False
@@ -210,6 +214,16 @@ def generar_hoja_pregunta(wb, df, pregunta_num, pregunta_col, pregunta_nombre, t
     # Preparar datos
     df_work = df.copy()
     
+    # FILTRO ESPECIAL PARA P6: Solo incluir registros con "b. Contact Center" en P3
+    if pregunta_col == 'P6 - Gestión Contact Center':
+        p3_col = 'P3 - Medios SAT Utilizados'
+        if p3_col in df_work.columns:
+            # Filtrar solo registros que tienen "b. Contact Center" en P3
+            mask_p3_contact = df_work[p3_col].astype(str).str.contains('b. Contact Center', na=False)
+            df_work = df_work[mask_p3_contact].copy()
+            print(f"  ⚠ P6 es condicional: Filtrando solo registros con 'b. Contact Center' en P3")
+            print(f"  Registros después del filtro: {len(df_work)}")
+    
     # FILTRO ESPECIAL PARA P7: Solo incluir registros con "b. Contact Center" en P3
     if pregunta_col == 'P7 - Medio Contact Center':
         p3_col = 'P3 - Medios SAT Utilizados'
@@ -264,10 +278,16 @@ def generar_hoja_pregunta(wb, df, pregunta_num, pregunta_col, pregunta_nombre, t
             'categorias': ['H', 'M', 'No deseo responder'],
             'col_inicio': col + 2
         },
+        'P3 Medios SAT utilizados': {
+            'columna': 'P3 - Medios SAT Utilizados',
+            'categorias': ['a. Presencial', 'b. Contact Center', 'c. Servicios Electrónicos'],
+            'col_inicio': col + 5,
+            'usa_contains': True  # Marcar que usa str.contains() para contar
+        },
         'Rango de edad': {
             'columna': 'Rango_Edad',
             'categorias': ['18 - 25', '26 - 35', '36 - 45', '46 - 60', 'Más de 61'],
-            'col_inicio': col + 5
+            'col_inicio': col + 8
         },
         'P40 Nivel académico': {
             'columna': 'P40 - Nivel Académico',
@@ -277,7 +297,7 @@ def generar_hoja_pregunta(wb, df, pregunta_num, pregunta_col, pregunta_nombre, t
                 'f. Diversificado incompleto', 'g. Diversificado completo', 'h. Técnico',
                 'i. Universidad incompleta', 'j. Universidad Completa', 'k. Maestría / Posgrado'
             ],
-            'col_inicio': col + 10
+            'col_inicio': col + 13
         },
         'P39 Idiomas': {
             'columna': 'P39 - Idiomas',
@@ -287,7 +307,7 @@ def generar_hoja_pregunta(wb, df, pregunta_num, pregunta_col, pregunta_nombre, t
                 'p. Ixil', 'q. Poqomam', 's. Jakalteco', 't. Poqomchi', 'u. Ninguno',
                 'v. Inglés', 'w. Otro'
             ],
-            'col_inicio': col + 21
+            'col_inicio': col + 24
         },
         'P44 Oficina/Agencia/Delegación': {
             'columna': 'P44 - Oficina/Agencia/Delegación',
@@ -297,7 +317,7 @@ def generar_hoja_pregunta(wb, df, pregunta_num, pregunta_col, pregunta_nombre, t
                 'Petén', 'Quetzaltenango', 'Quiché', 'Retalhuleu', 'Sacatepéquez', 'San Marcos',
                 'Santa Rosa', 'Sololá', 'Suchitepéquez', 'Totonicapán', 'Zacapa'
             ],
-            'col_inicio': col + 38
+            'col_inicio': col + 41
         },
         'P44.1 Aduana': {
             'columna': 'P44 - Aduana',
@@ -307,7 +327,7 @@ def generar_hoja_pregunta(wb, df, pregunta_num, pregunta_col, pregunta_nombre, t
                 'San Cristóbal', 'Santo Tomás de Castilla Zona Libre de Industria y Comercio -ZOLIC-',
                 'Tikal', 'Valle Nuevo'
             ],
-            'col_inicio': col + 60
+            'col_inicio': col + 63
         },
         'P9 Personería': {
             'columna': 'P9 - Personería',
@@ -318,22 +338,22 @@ def generar_hoja_pregunta(wb, df, pregunta_num, pregunta_col, pregunta_nombre, t
                 'k. Auxiliar Gestor Tributario', 'm. Consolidador/Descons.', 'n. Transportista Ad',
                 'p. Mensajero', 'r. Otro'
             ],
-            'col_inicio': col + 71
+            'col_inicio': col + 74
         },
         'P38 Etnia': {
             'columna': 'P38 - Etnia',
             'categorias': ['Garifuna', 'Ladino', 'Maya', 'Otro', 'Xinca'],
-            'col_inicio': col + 86
+            'col_inicio': col + 89
         },
         'Oficina/Agencia/Delegación': {
             'columna': 'Region_Oficina',
             'categorias': ['Central', 'Occidente', 'Sur', 'Nororiente'],
-            'col_inicio': col + 91
+            'col_inicio': col + 94
         },
         'Aduana': {
             'columna': 'Region_Aduana',
             'categorias': ['Central', 'Occidente', 'Sur', 'Nororiente'],
-            'col_inicio': col + 95
+            'col_inicio': col + 98
         }
     }
     
@@ -450,7 +470,7 @@ def generar_hoja_pregunta(wb, df, pregunta_num, pregunta_col, pregunta_nombre, t
         
         # TOTAL
         if tiene_combinaciones:
-            total = len(df_work[df_work[pregunta_col].astype(str).str.contains(opcion, na=False)])
+            total = len(df_work[df_work[pregunta_col].astype(str).str.contains(opcion, na=False, regex=False)])
         else:
             total = len(df_work[df_work[pregunta_col] == opcion])
         
@@ -478,22 +498,27 @@ def generar_hoja_pregunta(wb, df, pregunta_num, pregunta_col, pregunta_nombre, t
                 if tiene_combinaciones:
                     if col_original == 'Rango_Edad':
                         count = len(df_work[
-                            (df_work[pregunta_col].astype(str).str.contains(opcion, na=False)) & 
+                            (df_work[pregunta_col].astype(str).str.contains(opcion, na=False, regex=False)) & 
                             (df_work[col_original] == cat)
                         ])
                     elif col_original == 'P39 - Idiomas':
                         count = len(df_work[
-                            (df_work[pregunta_col].astype(str).str.contains(opcion, na=False)) & 
+                            (df_work[pregunta_col].astype(str).str.contains(opcion, na=False, regex=False)) & 
+                            (df_work[col_original].astype(str).str.contains(cat, na=False))
+                        ])
+                    elif col_original == 'P3 - Medios SAT Utilizados':
+                        count = len(df_work[
+                            (df_work[pregunta_col].astype(str).str.contains(opcion, na=False, regex=False)) & 
                             (df_work[col_original].astype(str).str.contains(cat, na=False))
                         ])
                     elif col_original == 'Region_Oficina' or col_original == 'Region_Aduana':
                         count = len(df_work[
-                            (df_work[pregunta_col].astype(str).str.contains(opcion, na=False)) & 
+                            (df_work[pregunta_col].astype(str).str.contains(opcion, na=False, regex=False)) & 
                             (df_work[col_original] == cat)
                         ])
                     else:
                         count = len(df_work[
-                            (df_work[pregunta_col].astype(str).str.contains(opcion, na=False)) & 
+                            (df_work[pregunta_col].astype(str).str.contains(opcion, na=False, regex=False)) & 
                             (df_work[col_original] == cat)
                         ])
                 else:
@@ -503,6 +528,11 @@ def generar_hoja_pregunta(wb, df, pregunta_num, pregunta_col, pregunta_nombre, t
                             (df_work[col_original] == cat)
                         ])
                     elif col_original == 'P39 - Idiomas':
+                        count = len(df_work[
+                            (df_work[pregunta_col] == opcion) & 
+                            (df_work[col_original].astype(str).str.contains(cat, na=False))
+                        ])
+                    elif col_original == 'P3 - Medios SAT Utilizados':
                         count = len(df_work[
                             (df_work[pregunta_col] == opcion) & 
                             (df_work[col_original].astype(str).str.contains(cat, na=False))
@@ -582,6 +612,8 @@ def generar_hoja_pregunta(wb, df, pregunta_num, pregunta_col, pregunta_nombre, t
             if col_original == 'Rango_Edad':
                 total_cat = len(df_pregunta[df_pregunta[col_original] == cat])
             elif col_original == 'P39 - Idiomas':
+                total_cat = len(df_pregunta[df_pregunta[col_original].astype(str).str.contains(cat, na=False)])
+            elif col_original == 'P3 - Medios SAT Utilizados':
                 total_cat = len(df_pregunta[df_pregunta[col_original].astype(str).str.contains(cat, na=False)])
             elif col_original == 'Region_Oficina' or col_original == 'Region_Aduana':
                 total_cat = len(df_pregunta[df_pregunta[col_original] == cat])
@@ -700,18 +732,20 @@ def generar_hoja_pregunta(wb, df, pregunta_num, pregunta_col, pregunta_nombre, t
         
         # TOTAL - calcular porcentaje
         if tiene_combinaciones:
-            total_absoluto = len(df_work[df_work[pregunta_col].astype(str).str.contains(opcion, na=False)])
+            total_absoluto = len(df_work[df_work[pregunta_col].astype(str).str.contains(opcion, na=False, regex=False)])
         else:
             total_absoluto = len(df_work[df_work[pregunta_col] == opcion])
         
         porcentaje_total = (total_absoluto / total_general * 100) if total_general > 0 else 0
-        porcentaje_redondeado = redondear_porcentaje(porcentaje_total)
+        # Truncar a dos decimales sin redondear (almacenar como decimal)
+        # Ejemplo: 13.456% -> int(13.456 * 100) = 1345 -> 1345/10000 = 0.1345 (representa 13.45%)
+        porcentaje_decimal = int(porcentaje_total * 100) / 10000
         
-        if porcentaje_redondeado == 0:
+        if porcentaje_decimal == 0:
             ws.cell(row=fila_porcentajes, column=col_actual, value="---")
         else:
-            ws.cell(row=fila_porcentajes, column=col_actual, value=porcentaje_redondeado / 100)
-            ws.cell(row=fila_porcentajes, column=col_actual).number_format = '0%'
+            ws.cell(row=fila_porcentajes, column=col_actual, value=porcentaje_decimal)
+            ws.cell(row=fila_porcentajes, column=col_actual).number_format = '0.00%'
         
         border = Border(
             left=Side(style='medium'),
@@ -736,22 +770,27 @@ def generar_hoja_pregunta(wb, df, pregunta_num, pregunta_col, pregunta_nombre, t
                 if tiene_combinaciones:
                     if col_original == 'Rango_Edad':
                         count = len(df_work[
-                            (df_work[pregunta_col].astype(str).str.contains(opcion, na=False)) & 
+                            (df_work[pregunta_col].astype(str).str.contains(opcion, na=False, regex=False)) & 
                             (df_work[col_original] == cat)
                         ])
                     elif col_original == 'P39 - Idiomas':
                         count = len(df_work[
-                            (df_work[pregunta_col].astype(str).str.contains(opcion, na=False)) & 
+                            (df_work[pregunta_col].astype(str).str.contains(opcion, na=False, regex=False)) & 
+                            (df_work[col_original].astype(str).str.contains(cat, na=False))
+                        ])
+                    elif col_original == 'P3 - Medios SAT Utilizados':
+                        count = len(df_work[
+                            (df_work[pregunta_col].astype(str).str.contains(opcion, na=False, regex=False)) & 
                             (df_work[col_original].astype(str).str.contains(cat, na=False))
                         ])
                     elif col_original == 'Region_Oficina' or col_original == 'Region_Aduana':
                         count = len(df_work[
-                            (df_work[pregunta_col].astype(str).str.contains(opcion, na=False)) & 
+                            (df_work[pregunta_col].astype(str).str.contains(opcion, na=False, regex=False)) & 
                             (df_work[col_original] == cat)
                         ])
                     else:
                         count = len(df_work[
-                            (df_work[pregunta_col].astype(str).str.contains(opcion, na=False)) & 
+                            (df_work[pregunta_col].astype(str).str.contains(opcion, na=False, regex=False)) & 
                             (df_work[col_original] == cat)
                         ])
                 else:
@@ -761,6 +800,11 @@ def generar_hoja_pregunta(wb, df, pregunta_num, pregunta_col, pregunta_nombre, t
                             (df_work[col_original] == cat)
                         ])
                     elif col_original == 'P39 - Idiomas':
+                        count = len(df_work[
+                            (df_work[pregunta_col] == opcion) & 
+                            (df_work[col_original].astype(str).str.contains(cat, na=False))
+                        ])
+                    elif col_original == 'P3 - Medios SAT Utilizados':
                         count = len(df_work[
                             (df_work[pregunta_col] == opcion) & 
                             (df_work[col_original].astype(str).str.contains(cat, na=False))
@@ -781,19 +825,22 @@ def generar_hoja_pregunta(wb, df, pregunta_num, pregunta_col, pregunta_nombre, t
                     total_categoria = len(df_pregunta[df_pregunta[col_original] == cat])
                 elif col_original == 'P39 - Idiomas':
                     total_categoria = len(df_pregunta[df_pregunta[col_original].astype(str).str.contains(cat, na=False)])
+                elif col_original == 'P3 - Medios SAT Utilizados':
+                    total_categoria = len(df_pregunta[df_pregunta[col_original].astype(str).str.contains(cat, na=False)])
                 elif col_original == 'Region_Oficina' or col_original == 'Region_Aduana':
                     total_categoria = len(df_pregunta[df_pregunta[col_original] == cat])
                 else:
                     total_categoria = len(df_pregunta[df_pregunta[col_original] == cat])
                 
                 porcentaje = (count / total_categoria * 100) if total_categoria > 0 else 0
-                porcentaje_redondeado = redondear_porcentaje(porcentaje)
+                # Truncar a dos decimales sin redondear (almacenar como decimal con 2 decimales)
+                porcentaje_decimal = int(porcentaje * 100) / 10000
                 
-                if porcentaje_redondeado == 0:
+                if porcentaje_decimal == 0:
                     ws.cell(row=fila_porcentajes, column=col_actual, value="---")
                 else:
-                    ws.cell(row=fila_porcentajes, column=col_actual, value=porcentaje_redondeado / 100)
-                    ws.cell(row=fila_porcentajes, column=col_actual).number_format = '0%'
+                    ws.cell(row=fila_porcentajes, column=col_actual, value=porcentaje_decimal)
+                    ws.cell(row=fila_porcentajes, column=col_actual).number_format = '0.00%'
                 
                 border = Border(
                     left=Side(style='medium' if es_primera else 'thin', color='FFD0D0D0'),
@@ -820,22 +867,30 @@ def generar_hoja_pregunta(wb, df, pregunta_num, pregunta_col, pregunta_nombre, t
     ws.cell(row=fila_porcentajes, column=col_actual).alignment = Alignment(horizontal='center', vertical='center')
     col_actual += 1
     
-    # TOTAL general - suma vertical de porcentajes
+    # TOTAL general - suma VERTICAL de porcentajes (suma de los porcentajes de arriba en esta columna)
     suma_total = 0
     for idx_opcion in range(len(opciones)):
         fila_anterior = fila_porcentajes - len(opciones) + idx_opcion
         valor_celda = ws.cell(row=fila_anterior, column=col_actual).value
-        if valor_celda is not None:
-            if isinstance(valor_celda, (int, float)):
-                suma_total += int(valor_celda * 100)
+        if valor_celda is not None and valor_celda != "---":
+            if isinstance(valor_celda, (int, float)) and valor_celda > 0:
+                # Los valores están en formato decimal (0.13), multiplicar por 10000 para obtener centésimas
+                suma_total += int(valor_celda * 10000)
             elif isinstance(valor_celda, str) and valor_celda != "---" and '%' in valor_celda:
-                suma_total += int(valor_celda.replace('%', ''))
+                # Extraer el número del porcentaje
+                try:
+                    num_porcentaje = float(valor_celda.replace('%', '').strip())
+                    suma_total += int(num_porcentaje * 100)  # Convertir a centésimas
+                except:
+                    pass
     
     if suma_total == 0:
         ws.cell(row=fila_porcentajes, column=col_actual, value="---")
     else:
-        ws.cell(row=fila_porcentajes, column=col_actual, value=suma_total / 100)
-        ws.cell(row=fila_porcentajes, column=col_actual).number_format = '0%'
+        # Truncar a dos decimales sin redondear (almacenar como decimal con 2 decimales)
+        total_decimal = int(suma_total) / 10000
+        ws.cell(row=fila_porcentajes, column=col_actual, value=total_decimal)
+        ws.cell(row=fila_porcentajes, column=col_actual).number_format = '0.00%'
     
     ws.cell(row=fila_porcentajes, column=col_actual).font = Font(bold=True)
     ws.cell(row=fila_porcentajes, column=col_actual).border = Border(
@@ -863,15 +918,18 @@ def generar_hoja_pregunta(wb, df, pregunta_num, pregunta_col, pregunta_nombre, t
                 valor_celda = ws.cell(row=fila_anterior, column=col_actual).value
                 if valor_celda is not None:
                     if isinstance(valor_celda, (int, float)):
-                        suma_porcentajes += int(valor_celda * 100)
+                        # Los valores están en formato decimal (0.13), multiplicar por 10000 para obtener centésimas
+                        suma_porcentajes += int(valor_celda * 10000)
                     elif isinstance(valor_celda, str) and valor_celda != "---" and '%' in valor_celda:
-                        suma_porcentajes += int(valor_celda.replace('%', ''))
+                        suma_porcentajes += int(valor_celda.replace('%', '')) * 100
             
             if suma_porcentajes == 0:
                 ws.cell(row=fila_porcentajes, column=col_actual, value="---")
             else:
-                ws.cell(row=fila_porcentajes, column=col_actual, value=suma_porcentajes / 100)
-                ws.cell(row=fila_porcentajes, column=col_actual).number_format = '0%'
+                # Truncar a dos decimales sin redondear (almacenar como decimal con 2 decimales)
+                suma_decimal = int(suma_porcentajes) / 10000
+                ws.cell(row=fila_porcentajes, column=col_actual, value=suma_decimal)
+                ws.cell(row=fila_porcentajes, column=col_actual).number_format = '0.00%'
             
             ws.cell(row=fila_porcentajes, column=col_actual).font = Font(bold=True)
             border = Border(
@@ -932,6 +990,14 @@ def generar_analisis_en_hoja_unica(ws, df, pregunta_num, pregunta_col, pregunta_
     # Preparar datos
     df_work = df.copy()
     
+    # FILTRO ESPECIAL PARA P6: Solo incluir registros con "b. Contact Center" en P3
+    if pregunta_col == 'P6 - Gestión Contact Center':
+        p3_col = 'P3 - Medios SAT Utilizados'
+        if p3_col in df_work.columns:
+            # Filtrar solo registros que tienen "b. Contact Center" en P3
+            mask_p3_contact = df_work[p3_col].astype(str).str.contains('b. Contact Center', na=False)
+            df_work = df_work[mask_p3_contact].copy()
+    
     # FILTRO ESPECIAL PARA P7: Solo incluir registros con "b. Contact Center" en P3
     if pregunta_col == 'P7 - Medio Contact Center':
         p3_col = 'P3 - Medios SAT Utilizados'
@@ -972,10 +1038,16 @@ def generar_analisis_en_hoja_unica(ws, df, pregunta_num, pregunta_col, pregunta_
             'categorias': ['H', 'M', 'No deseo responder'],
             'col_inicio': col + 2
         },
+        'P3 Medios SAT utilizados': {
+            'columna': 'P3 - Medios SAT Utilizados',
+            'categorias': ['a. Presencial', 'b. Contact Center', 'c. Servicios Electrónicos'],
+            'col_inicio': col + 5,
+            'usa_contains': True  # Marcar que usa str.contains() para contar
+        },
         'Rango de edad': {
             'columna': 'Rango_Edad',
             'categorias': ['18 - 25', '26 - 35', '36 - 45', '46 - 60', 'Más de 61'],
-            'col_inicio': col + 5
+            'col_inicio': col + 8
         },
         'P40 Nivel académico': {
             'columna': 'P40 - Nivel Académico',
@@ -985,7 +1057,7 @@ def generar_analisis_en_hoja_unica(ws, df, pregunta_num, pregunta_col, pregunta_
                 'f. Diversificado incompleto', 'g. Diversificado completo', 'h. Técnico',
                 'i. Universidad incompleta', 'j. Universidad Completa', 'k. Maestría / Posgrado'
             ],
-            'col_inicio': col + 10
+            'col_inicio': col + 13
         },
         'P39 Idiomas': {
             'columna': 'P39 - Idiomas',
@@ -995,7 +1067,7 @@ def generar_analisis_en_hoja_unica(ws, df, pregunta_num, pregunta_col, pregunta_
                 'p. Ixil', 'q. Poqomam', 's. Jakalteco', 't. Poqomchi', 'u. Ninguno',
                 'v. Inglés', 'w. Otro'
             ],
-            'col_inicio': col + 21
+            'col_inicio': col + 24
         },
         'P44 Oficina/Agencia/Delegación': {
             'columna': 'P44 - Oficina/Agencia/Delegación',
@@ -1005,7 +1077,7 @@ def generar_analisis_en_hoja_unica(ws, df, pregunta_num, pregunta_col, pregunta_
                 'Petén', 'Quetzaltenango', 'Quiché', 'Retalhuleu', 'Sacatepéquez', 'San Marcos',
                 'Santa Rosa', 'Sololá', 'Suchitepéquez', 'Totonicapán', 'Zacapa'
             ],
-            'col_inicio': col + 38
+            'col_inicio': col + 41
         },
         'P44.1 Aduana': {
             'columna': 'P44 - Aduana',
@@ -1015,7 +1087,7 @@ def generar_analisis_en_hoja_unica(ws, df, pregunta_num, pregunta_col, pregunta_
                 'San Cristóbal', 'Santo Tomás de Castilla Zona Libre de Industria y Comercio -ZOLIC-',
                 'Tikal', 'Valle Nuevo'
             ],
-            'col_inicio': col + 60
+            'col_inicio': col + 63
         },
         'P9 Personería': {
             'columna': 'P9 - Personería',
@@ -1026,22 +1098,22 @@ def generar_analisis_en_hoja_unica(ws, df, pregunta_num, pregunta_col, pregunta_
                 'k. Auxiliar Gestor Tributario', 'm. Consolidador/Descons.', 'n. Transportista Ad',
                 'p. Mensajero', 'r. Otro'
             ],
-            'col_inicio': col + 71
+            'col_inicio': col + 74
         },
         'P38 Etnia': {
             'columna': 'P38 - Etnia',
             'categorias': ['Garifuna', 'Ladino', 'Maya', 'Otro', 'Xinca'],
-            'col_inicio': col + 86
+            'col_inicio': col + 89
         },
         'Oficina/Agencia/Delegación': {
             'columna': 'Region_Oficina',
             'categorias': ['Central', 'Occidente', 'Sur', 'Nororiente'],
-            'col_inicio': col + 91
+            'col_inicio': col + 94
         },
         'Aduana': {
             'columna': 'Region_Aduana',
             'categorias': ['Central', 'Occidente', 'Sur', 'Nororiente'],
-            'col_inicio': col + 95
+            'col_inicio': col + 98
         }
     }
     
@@ -1158,7 +1230,7 @@ def generar_analisis_en_hoja_unica(ws, df, pregunta_num, pregunta_col, pregunta_
         
         # TOTAL
         if tiene_combinaciones:
-            total = len(df_work[df_work[pregunta_col].astype(str).str.contains(opcion, na=False)])
+            total = len(df_work[df_work[pregunta_col].astype(str).str.contains(opcion, na=False, regex=False)])
         else:
             total = len(df_work[df_work[pregunta_col] == opcion])
         
@@ -1186,22 +1258,27 @@ def generar_analisis_en_hoja_unica(ws, df, pregunta_num, pregunta_col, pregunta_
                 if tiene_combinaciones:
                     if col_original == 'Rango_Edad':
                         count = len(df_work[
-                            (df_work[pregunta_col].astype(str).str.contains(opcion, na=False)) & 
+                            (df_work[pregunta_col].astype(str).str.contains(opcion, na=False, regex=False)) & 
                             (df_work[col_original] == cat)
                         ])
                     elif col_original == 'P39 - Idiomas':
                         count = len(df_work[
-                            (df_work[pregunta_col].astype(str).str.contains(opcion, na=False)) & 
+                            (df_work[pregunta_col].astype(str).str.contains(opcion, na=False, regex=False)) & 
+                            (df_work[col_original].astype(str).str.contains(cat, na=False))
+                        ])
+                    elif col_original == 'P3 - Medios SAT Utilizados':
+                        count = len(df_work[
+                            (df_work[pregunta_col].astype(str).str.contains(opcion, na=False, regex=False)) & 
                             (df_work[col_original].astype(str).str.contains(cat, na=False))
                         ])
                     elif col_original == 'Region_Oficina' or col_original == 'Region_Aduana':
                         count = len(df_work[
-                            (df_work[pregunta_col].astype(str).str.contains(opcion, na=False)) & 
+                            (df_work[pregunta_col].astype(str).str.contains(opcion, na=False, regex=False)) & 
                             (df_work[col_original] == cat)
                         ])
                     else:
                         count = len(df_work[
-                            (df_work[pregunta_col].astype(str).str.contains(opcion, na=False)) & 
+                            (df_work[pregunta_col].astype(str).str.contains(opcion, na=False, regex=False)) & 
                             (df_work[col_original] == cat)
                         ])
                 else:
@@ -1211,6 +1288,11 @@ def generar_analisis_en_hoja_unica(ws, df, pregunta_num, pregunta_col, pregunta_
                             (df_work[col_original] == cat)
                         ])
                     elif col_original == 'P39 - Idiomas':
+                        count = len(df_work[
+                            (df_work[pregunta_col] == opcion) & 
+                            (df_work[col_original].astype(str).str.contains(cat, na=False))
+                        ])
+                    elif col_original == 'P3 - Medios SAT Utilizados':
                         count = len(df_work[
                             (df_work[pregunta_col] == opcion) & 
                             (df_work[col_original].astype(str).str.contains(cat, na=False))
@@ -1290,6 +1372,8 @@ def generar_analisis_en_hoja_unica(ws, df, pregunta_num, pregunta_col, pregunta_
             if col_original == 'Rango_Edad':
                 total_cat = len(df_pregunta[df_pregunta[col_original] == cat])
             elif col_original == 'P39 - Idiomas':
+                total_cat = len(df_pregunta[df_pregunta[col_original].astype(str).str.contains(cat, na=False)])
+            elif col_original == 'P3 - Medios SAT Utilizados':
                 total_cat = len(df_pregunta[df_pregunta[col_original].astype(str).str.contains(cat, na=False)])
             elif col_original == 'Region_Oficina' or col_original == 'Region_Aduana':
                 total_cat = len(df_pregunta[df_pregunta[col_original] == cat])
@@ -1408,18 +1492,20 @@ def generar_analisis_en_hoja_unica(ws, df, pregunta_num, pregunta_col, pregunta_
         
         # TOTAL - calcular porcentaje
         if tiene_combinaciones:
-            total_absoluto = len(df_work[df_work[pregunta_col].astype(str).str.contains(opcion, na=False)])
+            total_absoluto = len(df_work[df_work[pregunta_col].astype(str).str.contains(opcion, na=False, regex=False)])
         else:
             total_absoluto = len(df_work[df_work[pregunta_col] == opcion])
         
         porcentaje_total = (total_absoluto / total_general * 100) if total_general > 0 else 0
-        porcentaje_redondeado = redondear_porcentaje(porcentaje_total)
+        # Truncar a dos decimales sin redondear (almacenar como decimal)
+        # Ejemplo: 13.456% -> int(13.456 * 100) = 1345 -> 1345/10000 = 0.1345 (representa 13.45%)
+        porcentaje_decimal = int(porcentaje_total * 100) / 10000
         
-        if porcentaje_redondeado == 0:
+        if porcentaje_decimal == 0:
             ws.cell(row=fila_porcentajes, column=col_actual, value="---")
         else:
-            ws.cell(row=fila_porcentajes, column=col_actual, value=porcentaje_redondeado / 100)
-            ws.cell(row=fila_porcentajes, column=col_actual).number_format = '0%'
+            ws.cell(row=fila_porcentajes, column=col_actual, value=porcentaje_decimal)
+            ws.cell(row=fila_porcentajes, column=col_actual).number_format = '0.00%'
         
         border = Border(
             left=Side(style='medium'),
@@ -1444,22 +1530,27 @@ def generar_analisis_en_hoja_unica(ws, df, pregunta_num, pregunta_col, pregunta_
                 if tiene_combinaciones:
                     if col_original == 'Rango_Edad':
                         count = len(df_work[
-                            (df_work[pregunta_col].astype(str).str.contains(opcion, na=False)) & 
+                            (df_work[pregunta_col].astype(str).str.contains(opcion, na=False, regex=False)) & 
                             (df_work[col_original] == cat)
                         ])
                     elif col_original == 'P39 - Idiomas':
                         count = len(df_work[
-                            (df_work[pregunta_col].astype(str).str.contains(opcion, na=False)) & 
+                            (df_work[pregunta_col].astype(str).str.contains(opcion, na=False, regex=False)) & 
+                            (df_work[col_original].astype(str).str.contains(cat, na=False))
+                        ])
+                    elif col_original == 'P3 - Medios SAT Utilizados':
+                        count = len(df_work[
+                            (df_work[pregunta_col].astype(str).str.contains(opcion, na=False, regex=False)) & 
                             (df_work[col_original].astype(str).str.contains(cat, na=False))
                         ])
                     elif col_original == 'Region_Oficina' or col_original == 'Region_Aduana':
                         count = len(df_work[
-                            (df_work[pregunta_col].astype(str).str.contains(opcion, na=False)) & 
+                            (df_work[pregunta_col].astype(str).str.contains(opcion, na=False, regex=False)) & 
                             (df_work[col_original] == cat)
                         ])
                     else:
                         count = len(df_work[
-                            (df_work[pregunta_col].astype(str).str.contains(opcion, na=False)) & 
+                            (df_work[pregunta_col].astype(str).str.contains(opcion, na=False, regex=False)) & 
                             (df_work[col_original] == cat)
                         ])
                 else:
@@ -1469,6 +1560,11 @@ def generar_analisis_en_hoja_unica(ws, df, pregunta_num, pregunta_col, pregunta_
                             (df_work[col_original] == cat)
                         ])
                     elif col_original == 'P39 - Idiomas':
+                        count = len(df_work[
+                            (df_work[pregunta_col] == opcion) & 
+                            (df_work[col_original].astype(str).str.contains(cat, na=False))
+                        ])
+                    elif col_original == 'P3 - Medios SAT Utilizados':
                         count = len(df_work[
                             (df_work[pregunta_col] == opcion) & 
                             (df_work[col_original].astype(str).str.contains(cat, na=False))
@@ -1489,19 +1585,22 @@ def generar_analisis_en_hoja_unica(ws, df, pregunta_num, pregunta_col, pregunta_
                     total_categoria = len(df_pregunta[df_pregunta[col_original] == cat])
                 elif col_original == 'P39 - Idiomas':
                     total_categoria = len(df_pregunta[df_pregunta[col_original].astype(str).str.contains(cat, na=False)])
+                elif col_original == 'P3 - Medios SAT Utilizados':
+                    total_categoria = len(df_pregunta[df_pregunta[col_original].astype(str).str.contains(cat, na=False)])
                 elif col_original == 'Region_Oficina' or col_original == 'Region_Aduana':
                     total_categoria = len(df_pregunta[df_pregunta[col_original] == cat])
                 else:
                     total_categoria = len(df_pregunta[df_pregunta[col_original] == cat])
                 
                 porcentaje = (count / total_categoria * 100) if total_categoria > 0 else 0
-                porcentaje_redondeado = redondear_porcentaje(porcentaje)
+                # Truncar a dos decimales sin redondear (almacenar como decimal con 2 decimales)
+                porcentaje_decimal = int(porcentaje * 100) / 10000
                 
-                if porcentaje_redondeado == 0:
+                if porcentaje_decimal == 0:
                     ws.cell(row=fila_porcentajes, column=col_actual, value="---")
                 else:
-                    ws.cell(row=fila_porcentajes, column=col_actual, value=porcentaje_redondeado / 100)
-                    ws.cell(row=fila_porcentajes, column=col_actual).number_format = '0%'
+                    ws.cell(row=fila_porcentajes, column=col_actual, value=porcentaje_decimal)
+                    ws.cell(row=fila_porcentajes, column=col_actual).number_format = '0.00%'
                 
                 border = Border(
                     left=Side(style='medium' if es_primera else 'thin', color='FFD0D0D0'),
