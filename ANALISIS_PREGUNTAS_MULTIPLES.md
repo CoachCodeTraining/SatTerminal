@@ -165,3 +165,4 @@ df[columna].astype(str).str.contains(opcion, na=False, regex=False)
 **No se requieren correcciones adicionales.**
 
 
+
